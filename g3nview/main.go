@@ -40,7 +40,7 @@ type g3nView struct {
 	models           []*core.Node   // Models being shown
 	scene            *core.Node
 	cam              *camera.Camera
-	orbit            *camera.OrbitControl
+	fly              *camera.FlyControl
 }
 
 const (
@@ -85,7 +85,17 @@ func main() {
 	gv.cam = camera.New(1)
 	gv.cam.SetPositionVec(&gv.camPos)
 	gv.cam.LookAt(&math32.Vector3{0, 0, 0}, &math32.Vector3{0, 1, 0})
-	gv.orbit = camera.NewOrbitControl(gv.cam)
+	gv.fly = camera.NewFlyControl(
+		gv.cam,
+		&math32.Vector3{0, 0, 0},
+		&math32.Vector3{0, 1, 0},
+		camera.FlightSimStyle(),
+		// example custom keymap:
+		//camera.WithKeys(map[camera.FlyMovement]window.Key{
+		//	camera.Forward:  window.KeyUp,
+		//	camera.Backward: window.KeyDown,
+		//}),
+	)
 
 	// Set up callback to update viewport and camera aspect ratio when the window is resized
 	onResize := func(evname string, ev interface{}) {
@@ -140,9 +150,8 @@ func (gv *g3nView) buildGui() error {
 		gv.removeModels()
 	})
 	m1.AddOption("Reset camera").Subscribe(gui.OnClick, func(evname string, ev interface{}) {
-		gv.cam.SetPositionVec(&gv.camPos)
-		gv.cam.LookAt(&math32.Vector3{0, 0, 0}, &math32.Vector3{0, 1, 0})
-		gv.orbit.Reset()
+		gv.fly.Reposition(&gv.camPos)
+		gv.fly.Reorient(&math32.Vector3{0, 0, 0}, &math32.Vector3{0, 1, 0})
 	})
 	m1.AddSeparator()
 	m1.AddOption("Quit").SetId("quit").Subscribe(gui.OnClick, func(evname string, ev interface{}) {
